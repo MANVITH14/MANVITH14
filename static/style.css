@@ -1,0 +1,18 @@
+:root { --bg: #0f172a; --card: #111827; --text: #e5e7eb; --muted: #9ca3af; --accent: #22c55e; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: radial-gradient(1000px 600px at 10% -10%, #1f2937, #0b1020) fixed; color: var(--text);}
+.container { max-width: 880px; margin: 40px auto; padding: 24px; background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+h1 { margin: 0 0 8px; font-size: 28px; }
+.subtitle { margin: 0 0 20px; color: var(--muted); }
+form { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+.file-label { padding: 10px 14px; border: 1px dashed rgba(255,255,255,0.2); border-radius: 10px; cursor: pointer; }
+input[type="file"] { color: var(--muted); }
+button { background: var(--accent); color: #052e16; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+.preview img, .result img { max-width: 100%; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); }
+.hidden { display: none; }
+.error { margin-top: 12px; color: #fecaca; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); padding: 8px 12px; border-radius: 10px; }
+#faces { margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 10px; }
+.face-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 10px; }
+.face-card h4 { margin: 0 0 6px; }
+.face-card p { margin: 4px 0; color: var(--muted); }
