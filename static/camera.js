@@ -10,6 +10,7 @@ let cameraActive = false;
 let fpsInterval;
 let frameCount = 0;
 let lastTime = Date.now();
+let demoMode = false;
 
 function showError(message) {
   errorDiv.textContent = message;
@@ -29,7 +30,8 @@ function updateFPS() {
   
   if (elapsed >= 1000) {
     const fps = Math.round((frameCount * 1000) / elapsed);
-    fpsCounter.textContent = `FPS: ${fps}`;
+    const mode = demoMode ? 'DEMO' : '';
+    fpsCounter.textContent = `FPS: ${fps} ${mode}`;
     frameCount = 0;
     lastTime = now;
   }
@@ -39,24 +41,36 @@ async function checkCameraStatus() {
   try {
     const response = await fetch('/camera_status');
     const data = await response.json();
-    return data.camera_available;
+    return data;
   } catch (error) {
     console.error('Failed to check camera status:', error);
-    return false;
+    return { camera_available: false, demo_mode: true, message: 'Connection error' };
+  }
+}
+
+function updateStartButtonText(status) {
+  if (status.demo_mode) {
+    startBtn.textContent = 'Start Demo Mode';
+    startBtn.title = 'No camera available - will show demo with sample images';
+  } else {
+    startBtn.textContent = 'Start Camera';
+    startBtn.title = 'Start live camera feed';
   }
 }
 
 startBtn.addEventListener('click', async () => {
   hideErrors();
   
-  // Check if camera is available
-  const cameraAvailable = await checkCameraStatus();
-  if (!cameraAvailable) {
+  // Check camera status
+  const status = await checkCameraStatus();
+  demoMode = status.demo_mode;
+  
+  if (!status.camera_available && !status.demo_mode) {
     noCameraDiv.classList.remove('hidden');
     return;
   }
   
-  // Start camera feed
+  // Start camera/demo feed
   cameraActive = true;
   startBtn.disabled = true;
   startBtn.classList.add('disabled');
@@ -64,6 +78,14 @@ startBtn.addEventListener('click', async () => {
   stopBtn.classList.remove('disabled');
   
   cameraContainer.classList.remove('hidden');
+  
+  // Update camera info based on mode
+  const cameraInfoP = document.querySelector('.camera-info p');
+  if (demoMode) {
+    cameraInfoP.textContent = 'Demo mode: Cycling through sample images with age/gender detection.';
+  } else {
+    cameraInfoP.textContent = 'Live detection running. Age and gender predictions are shown in real-time.';
+  }
   
   // Reset FPS counter
   frameCount = 0;
@@ -76,17 +98,18 @@ startBtn.addEventListener('click', async () => {
   videoFeed.onload = () => {
     if (cameraActive) {
       // Refresh the image continuously for real-time feed
+      const refreshRate = demoMode ? 100 : 33; // Slower for demo mode
       setTimeout(() => {
         if (cameraActive) {
           videoFeed.src = `/video_feed?t=${Date.now()}`;
         }
-      }, 33); // ~30 FPS
+      }, refreshRate);
     }
   };
   
   videoFeed.onerror = () => {
     if (cameraActive) {
-      showError('Failed to load camera feed. Please try again.');
+      showError('Failed to load video feed. Please try again.');
       stopCamera();
     }
   };
@@ -115,6 +138,19 @@ function stopCamera() {
   
   hideErrors();
 }
+
+// Initialize camera status check on page load
+document.addEventListener('DOMContentLoaded', async () => {
+  const status = await checkCameraStatus();
+  updateStartButtonText(status);
+  
+  if (status.demo_mode) {
+    // Show a helpful message about demo mode
+    const subtitle = document.querySelector('.subtitle');
+    subtitle.textContent = 'Demo mode: No camera detected. Will use sample images to demonstrate detection.';
+    subtitle.style.color = '#fbbf24'; // Amber color for demo mode
+  }
+});
 
 // Handle page visibility change to stop camera when tab is hidden
 document.addEventListener('visibilitychange', () => {

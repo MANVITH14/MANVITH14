@@ -2,7 +2,8 @@ import os
 import io
 import base64
 import time
-from typing import List, Dict, Tuple
+import glob
+from typing import List, Dict, Tuple, Optional
 
 from flask import Flask, render_template, request, jsonify, Response
 import numpy as np
@@ -12,7 +13,9 @@ import requests
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(APP_ROOT, "models")
+SAMPLES_DIR = os.path.join(APP_ROOT, "samples")
 os.makedirs(MODELS_DIR, exist_ok=True)
+os.makedirs(SAMPLES_DIR, exist_ok=True)
 
 # Model sources with multiple mirrors/fallbacks
 AGE_PROTOTXT_URLS = [
@@ -36,6 +39,16 @@ GENDER_MODEL_URLS = [
     "https://raw.githubusercontent.com/HardShell1307/DeepLearning_Gender-and-Age-Detection-OpenCV-Python/main/gender_net.caffemodel"
 ]
 
+# Sample images URLs for demo mode
+SAMPLE_IMAGE_URLS = [
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
+    "https://images.unsplash.com/photo-1494790108755-2616b612b589?w=400&h=400&fit=crop&crop=face",
+    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
+    "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face",
+    "https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=400&h=400&fit=crop&crop=face",
+    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face"
+]
+
 AGE_PROTOTXT_PATH = os.path.join(MODELS_DIR, "age_deploy.prototxt")
 AGE_MODEL_PATH = os.path.join(MODELS_DIR, "age_net.caffemodel")
 GENDER_PROTOTXT_PATH = os.path.join(MODELS_DIR, "gender_deploy.prototxt")
@@ -49,8 +62,10 @@ GENDERS = ["Male", "Female"]
 
 MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
 
-# Global camera object
+# Global camera object and demo state
 camera = None
+demo_images = []
+demo_frame_index = 0
 
 
 def _download_file(url: str, target_path: str) -> None:
@@ -88,6 +103,35 @@ def ensure_models_downloaded() -> None:
 
     for label, urls, path in to_fetch:
         _download_with_fallback(urls, path)
+
+
+def download_sample_images() -> None:
+    """Download sample images for demo mode"""
+    global demo_images
+    demo_images = []
+    
+    for i, url in enumerate(SAMPLE_IMAGE_URLS):
+        try:
+            response = requests.get(url, timeout=10)
+            if response.status_code == 200:
+                # Convert to OpenCV format
+                nparr = np.frombuffer(response.content, np.uint8)
+                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                if img is not None:
+                    # Resize to a reasonable size
+                    img = cv2.resize(img, (640, 480))
+                    demo_images.append(img)
+        except Exception as e:
+            print(f"Failed to download sample image {i}: {e}")
+    
+    # If no images downloaded, create a simple placeholder
+    if not demo_images:
+        placeholder = np.ones((480, 640, 3), dtype=np.uint8) * 128
+        cv2.putText(placeholder, "No Camera Available", (150, 240), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(placeholder, "Demo Mode", (250, 280), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        demo_images.append(placeholder)
 
 
 def load_networks() -> Tuple[cv2.dnn_Net, cv2.dnn_Net]:
@@ -161,13 +205,42 @@ def image_to_base64_png(image_bgr: np.ndarray) -> str:
     return f"data:image/png;base64,{b64}"
 
 
-def get_camera():
+def get_camera() -> Optional[cv2.VideoCapture]:
     global camera
     if camera is None:
         camera = cv2.VideoCapture(0)
         if not camera.isOpened():
             camera = None
     return camera
+
+
+def get_demo_frame() -> np.ndarray:
+    """Get next frame from demo images"""
+    global demo_frame_index, demo_images
+    
+    if not demo_images:
+        download_sample_images()
+    
+    if not demo_images:
+        # Fallback placeholder
+        placeholder = np.ones((480, 640, 3), dtype=np.uint8) * 64
+        cv2.putText(placeholder, "DEMO MODE", (220, 240), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        return placeholder
+    
+    frame = demo_images[demo_frame_index % len(demo_images)].copy()
+    
+    # Add demo watermark
+    cv2.putText(frame, "DEMO MODE", (10, 30), 
+               cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+    
+    # Cycle through images slowly (change every ~3 seconds at 10 FPS)
+    if demo_frame_index % 30 == 0:
+        demo_frame_index = (demo_frame_index // 30 + 1) % len(demo_images) * 30
+    else:
+        demo_frame_index += 1
+    
+    return frame
 
 
 def generate_frames():
@@ -177,13 +250,19 @@ def generate_frames():
         _age_net, _gender_net = load_networks()
     
     cam = get_camera()
-    if cam is None:
-        return
+    use_demo = cam is None
+    
+    if use_demo:
+        print("Using demo mode - no camera available")
     
     while True:
-        success, frame = cam.read()
-        if not success:
-            break
+        if use_demo:
+            frame = get_demo_frame()
+            time.sleep(0.1)  # ~10 FPS for demo
+        else:
+            success, frame = cam.read()
+            if not success:
+                break
         
         # Analyze the frame
         results, annotated_frame = analyze_faces(frame, _age_net, _gender_net)
@@ -263,8 +342,14 @@ def video_feed():
 @app.route("/camera_status")
 def camera_status():
     cam = get_camera()
-    available = cam is not None and cam.isOpened()
-    return jsonify({"camera_available": available})
+    camera_available = cam is not None and cam.isOpened()
+    demo_mode = not camera_available
+    
+    return jsonify({
+        "camera_available": camera_available,
+        "demo_mode": demo_mode,
+        "message": "Demo mode with sample images" if demo_mode else "Physical camera detected"
+    })
 
 
 if __name__ == "__main__":
