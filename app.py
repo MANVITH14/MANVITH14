@@ -1,9 +1,10 @@
 import os
 import io
 import base64
+import time
 from typing import List, Dict, Tuple
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 import numpy as np
 import cv2
 import requests
@@ -47,6 +48,9 @@ AGE_BUCKETS = [
 GENDERS = ["Male", "Female"]
 
 MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
+
+# Global camera object
+camera = None
 
 
 def _download_file(url: str, target_path: str) -> None:
@@ -157,6 +161,44 @@ def image_to_base64_png(image_bgr: np.ndarray) -> str:
     return f"data:image/png;base64,{b64}"
 
 
+def get_camera():
+    global camera
+    if camera is None:
+        camera = cv2.VideoCapture(0)
+        if not camera.isOpened():
+            camera = None
+    return camera
+
+
+def generate_frames():
+    global _age_net, _gender_net
+    
+    if _age_net is None or _gender_net is None:
+        _age_net, _gender_net = load_networks()
+    
+    cam = get_camera()
+    if cam is None:
+        return
+    
+    while True:
+        success, frame = cam.read()
+        if not success:
+            break
+        
+        # Analyze the frame
+        results, annotated_frame = analyze_faces(frame, _age_net, _gender_net)
+        
+        # Encode frame as JPEG
+        ret, buffer = cv2.imencode('.jpg', annotated_frame)
+        if not ret:
+            continue
+            
+        frame_bytes = buffer.tobytes()
+        
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+
+
 app = Flask(__name__)
 
 # Lazy-load networks on first request to reduce startup time
@@ -205,6 +247,24 @@ def analyze():
         "faces": results,
         "annotated_image": annotated_b64
     })
+
+
+@app.route("/camera")
+def camera_page():
+    return render_template("camera.html")
+
+
+@app.route("/video_feed")
+def video_feed():
+    return Response(generate_frames(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route("/camera_status")
+def camera_status():
+    cam = get_camera()
+    available = cam is not None and cam.isOpened()
+    return jsonify({"camera_available": available})
 
 
 if __name__ == "__main__":
