@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Real-time Age & Gender Detection</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Real-time Age & Gender Detection</h1>
+    <p class="subtitle">Live camera feed with real-time age and gender prediction.</p>
+
+    <div class="camera-controls">
+      <button id="start-camera" class="camera-btn">Start Camera</button>
+      <button id="stop-camera" class="camera-btn disabled" disabled>Stop Camera</button>
+      <a href="/" class="back-link">← Back to Image Upload</a>
+    </div>
+
+    <div id="camera-container" class="camera-container hidden">
+      <div class="video-wrapper">
+        <img id="video-feed" src="/video_feed" alt="Camera feed" />
+      </div>
+      <div class="camera-info">
+        <p>Live detection running. Age and gender predictions are shown in real-time.</p>
+        <div id="fps-counter">FPS: --</div>
+      </div>
+    </div>
+
+    <div id="error" class="error hidden"></div>
+    <div id="no-camera" class="error hidden">
+      <p>Camera not available. Please ensure:</p>
+      <ul>
+        <li>Your device has a camera</li>
+        <li>Camera permissions are granted</li>
+        <li>No other application is using the camera</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="/static/camera.js"></script>
+</body>
+</html>

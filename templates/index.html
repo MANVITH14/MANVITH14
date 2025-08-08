@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Age & Gender Detection</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Age & Gender Detection</h1>
+    <p class="subtitle">Mini project: upload a photo with faces to estimate age ranges and gender.</p>
+
+    <div class="mode-selector">
+      <a href="/camera" class="mode-link">📹 Live Camera Detection</a>
+      <span class="mode-separator">or</span>
+    </div>
+
+    <form id="upload-form">
+      <label for="image-input" class="file-label">Choose an image</label>
+      <input id="image-input" name="image" type="file" accept="image/*" />
+      <button type="submit">Analyze</button>
+    </form>
+
+    <div id="preview" class="preview hidden">
+      <p>Preview:</p>
+      <img id="preview-img" alt="preview" />
+    </div>
+
+    <div id="result" class="result hidden">
+      <p>Annotated result:</p>
+      <img id="annotated-img" alt="annotated" />
+      <div id="faces"></div>
+    </div>
+
+    <div id="error" class="error hidden"></div>
+  </div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
