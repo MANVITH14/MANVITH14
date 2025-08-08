@@ -13,11 +13,27 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(APP_ROOT, "models")
 os.makedirs(MODELS_DIR, exist_ok=True)
 
-# Model sources (IMDB-WIKI pretrained models by Rothe et al.)
-AGE_PROTOTXT_URL = "https://data.vision.ee.ethz.ch/cvl/rrothe/imdb-wiki/static/age_deploy.prototxt"
-AGE_MODEL_URL = "https://data.vision.ee.ethz.ch/cvl/rrothe/imdb-wiki/static/age_net.caffemodel"
-GENDER_PROTOTXT_URL = "https://data.vision.ee.ethz.ch/cvl/rrothe/imdb-wiki/static/gender_deploy.prototxt"
-GENDER_MODEL_URL = "https://data.vision.ee.ethz.ch/cvl/rrothe/imdb-wiki/static/gender_net.caffemodel"
+# Model sources with multiple mirrors/fallbacks
+AGE_PROTOTXT_URLS = [
+    "https://raw.githubusercontent.com/akshtsng/Gender_Detection_and_Age_Prediction/master/age_deploy.prototxt",
+    "https://raw.githubusercontent.com/OshaPandey/Age_Gender_Detection/main/age_deploy.prototxt",
+    "https://raw.githubusercontent.com/HardShell1307/DeepLearning_Gender-and-Age-Detection-OpenCV-Python/main/age_deploy.prototxt"
+]
+AGE_MODEL_URLS = [
+    "https://github.com/GilLevi/AgeGenderDeepLearning/raw/master/models/age_net.caffemodel",
+    "https://raw.githubusercontent.com/OshaPandey/Age_Gender_Detection/main/age_net.caffemodel",
+    "https://raw.githubusercontent.com/HardShell1307/DeepLearning_Gender-and-Age-Detection-OpenCV-Python/main/age_net.caffemodel"
+]
+GENDER_PROTOTXT_URLS = [
+    "https://raw.githubusercontent.com/akshtsng/Gender_Detection_and_Age_Prediction/master/gender_deploy.prototxt",
+    "https://raw.githubusercontent.com/OshaPandey/Age_Gender_Detection/main/gender_deploy.prototxt",
+    "https://raw.githubusercontent.com/HardShell1307/DeepLearning_Gender-and-Age-Detection-OpenCV-Python/main/gender_deploy.prototxt"
+]
+GENDER_MODEL_URLS = [
+    "https://github.com/GilLevi/AgeGenderDeepLearning/raw/master/models/gender_net.caffemodel",
+    "https://raw.githubusercontent.com/OshaPandey/Age_Gender_Detection/main/gender_net.caffemodel",
+    "https://raw.githubusercontent.com/HardShell1307/DeepLearning_Gender-and-Age-Detection-OpenCV-Python/main/gender_net.caffemodel"
+]
 
 AGE_PROTOTXT_PATH = os.path.join(MODELS_DIR, "age_deploy.prototxt")
 AGE_MODEL_PATH = os.path.join(MODELS_DIR, "age_net.caffemodel")
@@ -42,16 +58,32 @@ def _download_file(url: str, target_path: str) -> None:
                     out_file.write(chunk)
 
 
+def _download_with_fallback(urls, target_path: str) -> None:
+    last_err = None
+    for url in urls:
+        try:
+            _download_file(url, target_path)
+            # basic sanity check: ensure file has some bytes
+            if os.path.getsize(target_path) > 1024:
+                return
+        except Exception as e:
+            last_err = e
+    raise last_err if last_err else RuntimeError(f"Failed to download {target_path}")
+
+
 def ensure_models_downloaded() -> None:
-    needed = [
-        (AGE_PROTOTXT_PATH, AGE_PROTOTXT_URL),
-        (AGE_MODEL_PATH, AGE_MODEL_URL),
-        (GENDER_PROTOTXT_PATH, GENDER_PROTOTXT_URL),
-        (GENDER_MODEL_PATH, GENDER_MODEL_URL),
-    ]
-    for path, url in needed:
-        if not os.path.exists(path) or os.path.getsize(path) == 0:
-            _download_file(url, path)
+    to_fetch = []
+    if not os.path.exists(AGE_PROTOTXT_PATH) or os.path.getsize(AGE_PROTOTXT_PATH) == 0:
+        to_fetch.append(("age prototxt", AGE_PROTOTXT_URLS, AGE_PROTOTXT_PATH))
+    if not os.path.exists(AGE_MODEL_PATH) or os.path.getsize(AGE_MODEL_PATH) == 0:
+        to_fetch.append(("age model", AGE_MODEL_URLS, AGE_MODEL_PATH))
+    if not os.path.exists(GENDER_PROTOTXT_PATH) or os.path.getsize(GENDER_PROTOTXT_PATH) == 0:
+        to_fetch.append(("gender prototxt", GENDER_PROTOTXT_URLS, GENDER_PROTOTXT_PATH))
+    if not os.path.exists(GENDER_MODEL_PATH) or os.path.getsize(GENDER_MODEL_PATH) == 0:
+        to_fetch.append(("gender model", GENDER_MODEL_URLS, GENDER_MODEL_PATH))
+
+    for label, urls, path in to_fetch:
+        _download_with_fallback(urls, path)
 
 
 def load_networks() -> Tuple[cv2.dnn_Net, cv2.dnn_Net]:
