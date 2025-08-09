@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ person.name }} - Missing Person Details</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    .detail-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .person-header {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      gap: 2rem;
+    }
+    .person-photo-large {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #f3f4f6;
+    }
+    .person-info-main {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .person-name-large {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #1f2937;
+      margin-bottom: 1rem;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .detail-item {
+      background: #f9fafb;
+      padding: 1rem;
+      border-radius: 8px;
+      border-left: 4px solid #3b82f6;
+    }
+    .detail-label {
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.25rem;
+    }
+    .detail-value {
+      color: #6b7280;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.875rem;
+    }
+    .status-active {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .status-found {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .status-closed {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .sightings-section {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .sightings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 1rem;
+    }
+    .sighting-card {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      border-left: 4px solid #10b981;
+    }
+    .sighting-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+    .sighting-time {
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .sighting-location {
+      color: #6b7280;
+    }
+    .confidence-badge {
+      background: #fef3c7;
+      color: #92400e;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    .high-confidence {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .medium-confidence {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .low-confidence {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .no-sightings {
+      text-align: center;
+      color: #6b7280;
+      padding: 2rem;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+    }
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+    @media (max-width: 768px) {
+      .person-header {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="detail-container">
+      <div class="person-header">
+        <div>
+          {% if person.photo_path %}
+            <img src="/static/missing_persons/{{ person.photo_path }}" alt="{{ person.name }}" class="person-photo-large">
+          {% else %}
+            <div class="person-photo-large" style="display: flex; align-items: center; justify-content: center; font-size: 4rem; color: #9ca3af;">
+              👤
+            </div>
+          {% endif %}
+        </div>
+        
+        <div class="person-info-main">
+          <div>
+            <div class="person-name-large">{{ person.name }}</div>
+            
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">Age</div>
+                <div class="detail-value">{{ person.age if person.age else 'Unknown' }}</div>
+              </div>
+              
+              <div class="detail-item">
+                <div class="detail-label">Gender</div>
+                <div class="detail-value">{{ person.gender }}</div>
+              </div>
+              
+              {% if person.last_seen_location %}
+              <div class="detail-item">
+                <div class="detail-label">Last Seen</div>
+                <div class="detail-value">{{ person.last_seen_location }}</div>
+              </div>
+              {% endif %}
+              
+              <div class="detail-item">
+                <div class="detail-label">Date Reported</div>
+                <div class="detail-value">{{ person.date_reported.strftime('%B %d, %Y') if person.date_reported else 'Unknown' }}</div>
+              </div>
+              
+              {% if person.detected_age_range %}
+              <div class="detail-item">
+                <div class="detail-label">AI Detected Age</div>
+                <div class="detail-value">{{ person.detected_age_range }}</div>
+              </div>
+              {% endif %}
+              
+              {% if person.detected_gender %}
+              <div class="detail-item">
+                <div class="detail-label">AI Detected Gender</div>
+                <div class="detail-value">{{ person.detected_gender }}</div>
+              </div>
+              {% endif %}
+            </div>
+            
+            {% if person.description %}
+            <div class="detail-item" style="margin-bottom: 1rem;">
+              <div class="detail-label">Description</div>
+              <div class="detail-value">{{ person.description }}</div>
+            </div>
+            {% endif %}
+          </div>
+          
+          <div>
+            <div style="margin-bottom: 1rem;">
+              <span class="status-badge status-{{ person.status }}">{{ person.status.title() }}</span>
+            </div>
+            
+            {% if person.contact_phone or person.contact_email %}
+            <div class="detail-item">
+              <div class="detail-label">Contact Information</div>
+              {% if person.contact_phone %}
+                <div class="detail-value">📞 {{ person.contact_phone }}</div>
+              {% endif %}
+              {% if person.contact_email %}
+                <div class="detail-value">📧 {{ person.contact_email }}</div>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="sightings-section">
+        <div class="sightings-header">
+          <h2>🔍 AI Detection History</h2>
+          <span style="color: #6b7280; font-size: 0.875rem;">
+            {{ sightings|length }} detection{{ 's' if sightings|length != 1 else '' }}
+          </span>
+        </div>
+        
+        {% if sightings %}
+          {% for sighting in sightings %}
+            <div class="sighting-card">
+              <div class="sighting-meta">
+                <div>
+                  <div class="sighting-time">
+                    {{ sighting.timestamp.strftime('%B %d, %Y at %I:%M %p') if sighting.timestamp else 'Unknown time' }}
+                  </div>
+                  {% if sighting.location %}
+                    <div class="sighting-location">📍 {{ sighting.location }}</div>
+                  {% endif %}
+                </div>
+                {% if sighting.confidence_score %}
+                  {% set confidence_class = 'high-confidence' if sighting.confidence_score >= 0.8 else 'medium-confidence' if sighting.confidence_score >= 0.6 else 'low-confidence' %}
+                  <span class="confidence-badge {{ confidence_class }}">
+                    {{ "%.1f"|format(sighting.confidence_score * 100) }}% confidence
+                  </span>
+                {% endif %}
+              </div>
+              
+              {% if sighting.notes %}
+                <div style="color: #374151; margin-bottom: 0.5rem;">
+                  {{ sighting.notes }}
+                </div>
+              {% endif %}
+              
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                {% if sighting.verified %}
+                  <span style="color: #065f46; font-weight: 600;">✅ Verified</span>
+                {% else %}
+                  <span style="color: #92400e; font-weight: 600;">⏳ Pending Verification</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="no-sightings">
+            <h3>No AI Detections Yet</h3>
+            <p>The AI system has not detected any potential matches for this person.</p>
+            <p>Keep the camera detection running to increase chances of finding them.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="action-buttons">
+        <a href="/missing-persons" class="btn btn-secondary">← Back to Dashboard</a>
+        <a href="/camera" class="btn btn-primary">📹 Start Live Detection</a>
+        {% if person.status == 'active' %}
+          <button class="btn btn-primary" style="background: #10b981;" onclick="markFound({{ person.id }})">
+            ✅ Mark as Found
+          </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function markFound(personId) {
+      if (confirm('Are you sure you want to mark this person as found?')) {
+        // In a real application, this would make an API call
+        fetch(`/api/missing-persons/${personId}/mark-found`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            location.reload();
+          } else {
+            alert('Error updating status: ' + data.error);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error updating status. Please try again.');
+        });
+      }
+    }
+  </script>
+</body>
+</html>

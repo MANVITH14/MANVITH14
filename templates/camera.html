@@ -3,41 +3,324 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Real-time Age & Gender Detection</title>
+  <title>AI Missing Person Live Detection</title>
   <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    .camera-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .camera-header h1 {
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+    .camera-controls {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .camera-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .video-feed {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .camera-info {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .alerts-panel {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .alert-item {
+      background: #fee2e2;
+      border-left: 4px solid #ef4444;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      animation: pulse 2s infinite;
+    }
+    .alert-high {
+      background: #fee2e2;
+      border-left-color: #ef4444;
+    }
+    .alert-medium {
+      background: #fef3c7;
+      border-left-color: #f59e0b;
+    }
+    .alert-low {
+      background: #f3f4f6;
+      border-left-color: #6b7280;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+    .missing-persons-sidebar {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 1.5rem;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .missing-person-mini {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: #f9fafb;
+      margin-bottom: 1rem;
+      border: 2px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .missing-person-mini.active-match {
+      border-color: #ef4444;
+      background: #fee2e2;
+    }
+    .mini-photo {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #e5e7eb;
+    }
+    .mini-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .mini-name {
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 0.25rem;
+    }
+    .mini-details {
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+    .main-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 2rem;
+    }
+    @media (max-width: 1024px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="container">
-    <h1>Real-time Age & Gender Detection</h1>
-    <p class="subtitle">Live camera feed with real-time age and gender prediction.</p>
-
-    <div class="camera-controls">
-      <button id="start-camera" class="camera-btn">Start Camera</button>
-      <button id="stop-camera" class="camera-btn disabled" disabled>Stop Camera</button>
-      <a href="/" class="back-link">← Back to Image Upload</a>
+    <div class="camera-header">
+      <h1>📹 Live Missing Person Detection</h1>
+      <p class="subtitle">Real-time AI monitoring for missing person identification</p>
     </div>
 
-    <div id="camera-container" class="camera-container hidden">
-      <div class="video-wrapper">
-        <img id="video-feed" src="/video_feed" alt="Camera feed" />
+    <div class="camera-controls">
+      <button id="start-camera" class="btn btn-primary">Start Detection</button>
+      <button id="stop-camera" class="btn btn-secondary disabled" disabled>Stop Detection</button>
+      <a href="/missing-persons" class="btn btn-secondary">📋 Dashboard</a>
+      <a href="/" class="btn btn-secondary">🏠 Home</a>
+    </div>
+
+    <div class="alerts-panel" id="alerts-panel" style="display: none;">
+      <h3 style="color: #ef4444; margin-bottom: 1rem;">🚨 POTENTIAL MATCHES DETECTED</h3>
+      <div id="alerts-container"></div>
+    </div>
+
+    <div class="main-layout">
+      <div>
+        <div id="camera-container" class="camera-container hidden">
+          <img id="video-feed" class="video-feed" alt="Camera feed" />
+          <div class="camera-info">
+            <p class="camera-info">Real-time detection ready. Alerts will appear above when matches are found.</p>
+            <div>
+              <span id="fps-counter">FPS: --</span>
+              <span style="margin-left: 1rem;">Matches: <span id="match-counter">0</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div id="no-camera" class="camera-container">
+          <h3>No Camera Available</h3>
+          <p>Unable to access camera. Please check your camera permissions and try again.</p>
+          <p>The system will use demo mode with sample images for demonstration.</p>
+        </div>
       </div>
-      <div class="camera-info">
-        <p>Live detection running. Age and gender predictions are shown in real-time.</p>
-        <div id="fps-counter">FPS: --</div>
+
+      <div class="missing-persons-sidebar">
+        <h3 style="color: #1f2937; margin-bottom: 1rem;">Missing Persons Registry</h3>
+        <div id="missing-persons-list">
+          <div style="text-align: center; color: #6b7280; padding: 2rem;">
+            Loading missing persons...
+          </div>
+        </div>
       </div>
     </div>
 
     <div id="error" class="error hidden"></div>
-    <div id="no-camera" class="error hidden">
-      <p>Camera not available. Please ensure:</p>
-      <ul>
-        <li>Your device has a camera</li>
-        <li>Camera permissions are granted</li>
-        <li>No other application is using the camera</li>
-      </ul>
-    </div>
   </div>
 
   <script src="/static/camera.js"></script>
+  <script>
+    let matchCounter = 0;
+    let activeMatches = new Set();
+
+    // Load missing persons list
+    async function loadMissingPersons() {
+      try {
+        const response = await fetch('/api/missing-persons');
+        const persons = await response.json();
+        
+        const container = document.getElementById('missing-persons-list');
+        if (persons.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; color: #6b7280; padding: 2rem;">
+              <p>No missing persons reported</p>
+              <a href="/report-missing" class="btn btn-primary" style="margin-top: 1rem; font-size: 0.875rem;">Report Missing Person</a>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = persons.map(person => `
+          <div class="missing-person-mini" data-person-id="${person.id}">
+            ${person.photo_path ? 
+              `<img src="/static/missing_persons/${person.photo_path}" alt="${person.name}" class="mini-photo">` :
+              `<div class="mini-photo" style="display: flex; align-items: center; justify-content: center; color: #9ca3af;">👤</div>`
+            }
+            <div class="mini-info">
+              <div class="mini-name">${person.name}</div>
+              <div class="mini-details">
+                ${person.gender}, Age ${person.age || 'Unknown'}<br>
+                ${person.last_seen_location || 'Location unknown'}
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Failed to load missing persons:', error);
+        document.getElementById('missing-persons-list').innerHTML = `
+          <div style="text-align: center; color: #ef4444; padding: 2rem;">
+            Failed to load missing persons
+          </div>
+        `;
+      }
+    }
+
+    // Simulate real-time alerts (in production, this would come from the video feed)
+    function showAlert(match) {
+      const alertsPanel = document.getElementById('alerts-panel');
+      const alertsContainer = document.getElementById('alerts-container');
+      
+      alertsPanel.style.display = 'block';
+      
+      const confidenceClass = match.confidence >= 80 ? 'alert-high' : 
+                            match.confidence >= 60 ? 'alert-medium' : 'alert-low';
+      
+      const alertElement = document.createElement('div');
+      alertElement.className = `alert-item ${confidenceClass}`;
+      alertElement.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <strong>${match.missing_person.name}</strong>
+            <div style="font-size: 0.875rem; margin-top: 0.25rem;">
+              ${match.confidence}% confidence match
+            </div>
+            <div style="font-size: 0.875rem; color: #6b7280;">
+              ${match.missing_person.gender}, Age ${match.missing_person.age || 'Unknown'}
+            </div>
+          </div>
+          <div style="font-size: 0.75rem; color: #6b7280;">
+            ${new Date().toLocaleTimeString()}
+          </div>
+        </div>
+      `;
+      
+      alertsContainer.insertBefore(alertElement, alertsContainer.firstChild);
+      
+      // Highlight in sidebar
+      const personCard = document.querySelector(`[data-person-id="${match.missing_person.id}"]`);
+      if (personCard) {
+        personCard.classList.add('active-match');
+        setTimeout(() => personCard.classList.remove('active-match'), 5000);
+      }
+      
+      // Update counter
+      activeMatches.add(match.missing_person.id);
+      document.getElementById('match-counter').textContent = activeMatches.size;
+      
+      // Auto-remove alert after 10 seconds
+      setTimeout(() => {
+        if (alertElement.parentNode) {
+          alertElement.remove();
+        }
+      }, 10000);
+    }
+
+    // Load missing persons on page load
+    document.addEventListener('DOMContentLoaded', loadMissingPersons);
+
+    // Demo: simulate some alerts for demonstration
+    let demoAlertInterval;
+    const originalStartBtn = document.getElementById('start-camera');
+    
+    originalStartBtn.addEventListener('click', () => {
+      // Start demo alerts after camera starts (demo purpose only)
+      setTimeout(() => {
+        if (demoMode) {
+          demoAlertInterval = setInterval(() => {
+            // Simulate random alerts for demo
+            const demoMatches = [
+              {
+                missing_person: { id: 1, name: "Demo Person A", gender: "Female", age: 25 },
+                confidence: Math.floor(Math.random() * 40) + 60
+              },
+              {
+                missing_person: { id: 2, name: "Demo Person B", gender: "Male", age: 35 },
+                confidence: Math.floor(Math.random() * 30) + 70
+              }
+            ];
+            
+            if (Math.random() > 0.7) { // 30% chance of alert
+              const randomMatch = demoMatches[Math.floor(Math.random() * demoMatches.length)];
+              showAlert(randomMatch);
+            }
+          }, 3000); // Check every 3 seconds
+        }
+      }, 2000);
+    });
+
+    // Clear demo alerts when stopping
+    document.getElementById('stop-camera').addEventListener('click', () => {
+      if (demoAlertInterval) {
+        clearInterval(demoAlertInterval);
+        demoAlertInterval = null;
+      }
+      activeMatches.clear();
+      document.getElementById('match-counter').textContent = '0';
+      document.getElementById('alerts-panel').style.display = 'none';
+      document.getElementById('alerts-container').innerHTML = '';
+    });
+  </script>
 </body>
 </html>
