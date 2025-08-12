@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Report Missing Person - AI Missing Person Finder</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    .form-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+    }
+    .form-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .form-header h1 {
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+    .form-header p {
+      color: #6b7280;
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #374151;
+    }
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .form-textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    .form-select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 1rem;
+      background: white;
+    }
+    .file-upload-area {
+      border: 2px dashed #d1d5db;
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      transition: border-color 0.2s;
+      cursor: pointer;
+    }
+    .file-upload-area:hover {
+      border-color: #3b82f6;
+      background: #f8fafc;
+    }
+    .file-upload-area.dragover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .file-input {
+      display: none;
+    }
+    .photo-preview {
+      max-width: 200px;
+      max-height: 200px;
+      border-radius: 8px;
+      margin: 1rem auto;
+      display: none;
+    }
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+      width: 100%;
+      text-align: center;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+      margin-right: 1rem;
+    }
+    .btn-secondary:hover {
+      background: #4b5563;
+    }
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2rem;
+    }
+    .required {
+      color: #ef4444;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="form-container">
+      <div class="form-header">
+        <h1>📝 Report Missing Person</h1>
+        <p>Help us find missing individuals using AI-powered detection</p>
+      </div>
+
+      <form method="POST" enctype="multipart/form-data" id="missing-person-form">
+        <div class="form-group">
+          <label for="name" class="form-label">Full Name <span class="required">*</span></label>
+          <input type="text" id="name" name="name" class="form-input" required 
+                 placeholder="Enter the missing person's full name">
+        </div>
+
+        <div class="form-group">
+          <label for="age" class="form-label">Age</label>
+          <input type="number" id="age" name="age" class="form-input" min="0" max="120"
+                 placeholder="Age (if known)">
+        </div>
+
+        <div class="form-group">
+          <label for="gender" class="form-label">Gender <span class="required">*</span></label>
+          <select id="gender" name="gender" class="form-select" required>
+            <option value="">Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="photo" class="form-label">Photo</label>
+          <div class="file-upload-area" onclick="document.getElementById('photo').click()">
+            <div>
+              <svg style="width: 48px; height: 48px; margin: 0 auto; color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+              <p style="margin: 0.5rem 0; color: #6b7280;">Click to upload or drag and drop</p>
+              <p style="margin: 0; font-size: 0.875rem; color: #9ca3af;">JPG, PNG up to 10MB</p>
+            </div>
+            <img id="photo-preview" class="photo-preview" alt="Photo preview">
+          </div>
+          <input type="file" id="photo" name="photo" class="file-input" accept="image/*">
+        </div>
+
+        <div class="form-group">
+          <label for="last_seen_location" class="form-label">Last Seen Location</label>
+          <input type="text" id="last_seen_location" name="last_seen_location" class="form-input"
+                 placeholder="Where was this person last seen?">
+        </div>
+
+        <div class="form-group">
+          <label for="description" class="form-label">Description</label>
+          <textarea id="description" name="description" class="form-input form-textarea"
+                    placeholder="Physical description, clothing, distinctive features, etc."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="contact_phone" class="form-label">Contact Phone</label>
+          <input type="tel" id="contact_phone" name="contact_phone" class="form-input"
+                 placeholder="Your phone number for updates">
+        </div>
+
+        <div class="form-group">
+          <label for="contact_email" class="form-label">Contact Email</label>
+          <input type="email" id="contact_email" name="contact_email" class="form-input"
+                 placeholder="Your email for updates">
+        </div>
+
+        <div class="form-actions">
+          <a href="/missing-persons" class="btn btn-secondary">← Back to Dashboard</a>
+          <button type="submit" class="btn btn-primary">Submit Report</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Photo upload handling
+    const photoInput = document.getElementById('photo');
+    const photoPreview = document.getElementById('photo-preview');
+    const uploadArea = document.querySelector('.file-upload-area');
+
+    photoInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          photoPreview.src = e.target.result;
+          photoPreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Drag and drop functionality
+    uploadArea.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        photoInput.files = files;
+        photoInput.dispatchEvent(new Event('change'));
+      }
+    });
+
+    // Form validation
+    document.getElementById('missing-person-form').addEventListener('submit', function(e) {
+      const name = document.getElementById('name').value.trim();
+      const gender = document.getElementById('gender').value;
+      
+      if (!name) {
+        alert('Please enter the missing person\'s name.');
+        e.preventDefault();
+        return;
+      }
+      
+      if (!gender) {
+        alert('Please select the missing person\'s gender.');
+        e.preventDefault();
+        return;
+      }
+    });
+  </script>
+</body>
+</html>
